@@ -12,7 +12,7 @@ RUN go build -o main ./main.go
 
 RUN chmod +x main
 
-EXPOSE 4040
+EXPOSE 3001
 
 CMD ["./main"]
 
