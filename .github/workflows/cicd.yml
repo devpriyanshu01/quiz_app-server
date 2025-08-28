@@ -9,7 +9,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - name: "Checkout Source"
-            uses: actions/checout@v4
+            uses: actions/checkout@v4
 
           - name: "Create .env file"
             run: echo "PORT=${{secrets.SERVER_PORT}}" >> .env
