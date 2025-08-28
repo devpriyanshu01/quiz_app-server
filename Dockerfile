@@ -8,7 +8,7 @@ RUN go mod tidy
 
 COPY . .
 
-RUN go build -o main ./cmd/api/main.go
+RUN go build -o main ./cmd/api
 
 RUN chmod +x main
 
