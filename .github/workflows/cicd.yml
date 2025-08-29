@@ -34,4 +34,4 @@ jobs:
             run: sudo docker rm -f quiz-app-container
 
           - name: "Run docker container"
-            run: sudo docker run -d -p 3001:3001 --name quiz-app-container priyanshu00268/quiz_app-server
+            run: sudo docker run -e SERVER_PORT=${{secrets.SERVER_PORT}} -e DB_PORT=${{secrets.DB_PORT}} -e DB_NAME=${{secrets.DB_NAME}} -e DB_USER=${{secrets.DB_USER}} -e DB_PASSWORD=${{secrets.DB_PASSWORD}} -e HOST=${{secrets.HOST}} -d -p 3001:3001 --name quiz-app-container priyanshu00268/quiz_app-server
