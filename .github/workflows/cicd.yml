@@ -28,10 +28,10 @@ jobs:
         runs-on: self-hosted
         steps:
           - name: "Pull docker image"
-            run: docker pull priyanshu00268/quiz_app-server:latest
+            run: sudo docker pull priyanshu00268/quiz_app-server:latest
 
           - name: "Delete old container"
-            run: docker rm -f quiz-app-container
+            run: sudo docker rm -f quiz-app-container
 
           - name: "Run docker container"
-            run: docker run -d -p 3001:3001 --name quiz-app-container priyanshu00268/quiz_app-server
+            run: sudo docker run -d -p 3001:3001 --name quiz-app-container priyanshu00268/quiz_app-server
