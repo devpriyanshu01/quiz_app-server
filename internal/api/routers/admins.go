@@ -10,5 +10,6 @@ func AdminRouters() *http.ServeMux {
 
 	mux.HandleFunc("POST /signup", handlers.SignupHandler)
 	mux.HandleFunc("POST /login", handlers.LoginHandler)
+	mux.HandleFunc("POST /test", )
 	return mux
 }
