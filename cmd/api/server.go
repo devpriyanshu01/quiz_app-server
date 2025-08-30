@@ -14,7 +14,7 @@ import (
 func main() {
 	err := godotenv.Load("../../.env")
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Error related to env variables:", err)
 	}
 
 	serverPort := os.Getenv("SERVER_PORT")
