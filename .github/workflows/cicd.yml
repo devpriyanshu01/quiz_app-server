@@ -21,7 +21,7 @@ jobs:
             run: docker build -t priyanshu00268/quiz_app-server .
 
           - name: "Push Image to docker hub"
-            run: docker push priyanshu00268/quiz_app-server:latest
+            run: docker push priyanshu00268/quiz_app-server:1.0.2
 
     deploy:
         needs: build
