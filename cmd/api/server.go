@@ -12,13 +12,16 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
+	err := godotenv.Load("../../.env")
 	if err != nil {
-		log.Println("failed to load .env file contents")
-		return
+		fmt.Println("Error:", err)
 	}
 
 	serverPort := os.Getenv("SERVER_PORT")
+	if serverPort == "" {
+		log.Println("Server port is not provided")
+		return
+	}
 
 	mux := routers.MainRouters()
 	secureMux := middlewares.Cors(mux)
