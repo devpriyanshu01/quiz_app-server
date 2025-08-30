@@ -137,5 +137,4 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Token: jwtTokenString,
 	}
 	json.NewEncoder(w).Encode(response)
-
 }
