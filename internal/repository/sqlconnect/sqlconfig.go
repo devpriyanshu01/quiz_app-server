@@ -19,6 +19,7 @@ func ConnectDb() (*sql.DB, error) {
 	fmt.Println("Trying to connect to MariaDB")
 
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, host, dbPort, dbName)
+	
 	fmt.Println("databaseurl:", connectionString)
 
 	db, err := sql.Open("mysql", connectionString)

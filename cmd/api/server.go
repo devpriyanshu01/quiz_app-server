@@ -33,7 +33,7 @@ func main() {
 	fmt.Println("Server is Listening on port ", serverPort)
 	err = server.ListenAndServe()
 	if err != nil {
-		log.Println("failed to start the server")
+		log.Println("failed to start the server:", err)
 		return
 	}
 }
