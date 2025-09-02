@@ -73,9 +73,9 @@ func SignToken(userId int, email string, fullName string) (string, error) {
 	jwtExpiresIn := os.Getenv("JWT_EXPIRES_IN")
 
 	claims := jwt.MapClaims{
-		"uid":       userId,
+		"id":       userId,
 		"email":     email,
-		"fullName" : fullName,
+		"full_name" : fullName,
 	}
 
 	log.Println("claims printing: ---------", claims)
@@ -90,8 +90,10 @@ func SignToken(userId int, email string, fullName string) (string, error) {
 		claims["exp"] = jwt.NewNumericDate(time.Now().Add(15 * time.Minute))
 	}
 
+	//generate the token using claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
+	//sign the token with jwt secret
 	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return "", err

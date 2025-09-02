@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"quiz_app/internal/models"
 	"quiz_app/internal/repository/sqlconnect"
 	"quiz_app/pkg/utils"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
 //just for testing handler
 func TestHandler(w http.ResponseWriter, r *http.Request){
 	w.Write([]byte("You're are inside /test route. It means your are testing the application."))
@@ -85,6 +89,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//connect to db
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {
 		utils.ErrorLogger(err)
@@ -136,5 +141,47 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}{
 		Token: jwtTokenString,
 	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func ValidateCookie(w http.ResponseWriter, r *http.Request) {
+	log.Println("Inside /validate cookie handler")
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	cookie, err := r.Cookie("Bearer")	//check cookie exists with the given name
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid Session/Cookie", http.StatusUnauthorized)
+		return
+	}
+
+	//claims object
+	claims := &models.Claims{}
+
+	tokenStr := cookie.Value
+
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		// Ensure the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Println("Printing Claims", claims)
+	
+	response := struct {
+		Valid bool 
+		ID int 
+	}{
+		Valid : true,
+		ID : claims.ID,
+	}
+
 	json.NewEncoder(w).Encode(response)
 }
