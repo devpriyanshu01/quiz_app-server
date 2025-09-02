@@ -173,7 +173,7 @@ func ValidateCookie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Printing Claims", claims)
+	fmt.Println("Printing Claims for testing", claims)
 	
 	response := struct {
 		Valid bool 
