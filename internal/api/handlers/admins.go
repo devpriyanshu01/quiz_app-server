@@ -30,6 +30,9 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//logging received input details
+	fmt.Println("sent data is:-", req)
+	
 	//basic validation
 	isFieldEmpty := utils.IsAnyUserFieldEmpty(req)
 	if isFieldEmpty {
