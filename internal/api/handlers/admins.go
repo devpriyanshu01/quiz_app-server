@@ -79,7 +79,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		utils.ErrorLogger(err)
-		http.Error(w, "failed.. to parse body", http.StatusBadRequest)
+		http.Error(w, "failed to parse body", http.StatusBadRequest)
 		return
 	}
 
