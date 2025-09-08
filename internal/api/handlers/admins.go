@@ -32,7 +32,7 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 
 	//logging received input details
 	fmt.Println("sent data is:-", req)
-	
+
 	//basic validation
 	isFieldEmpty := utils.IsAnyUserFieldEmpty(req)
 	if isFieldEmpty {
@@ -133,7 +133,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    jwtTokenString,
 		Path:     "/",
 		HttpOnly: false, // this allows JavaScript to access the cookie.
-		Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
+		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteLaxMode,
 	})
@@ -153,7 +153,11 @@ func ValidateCookie(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("Bearer")	//check cookie exists with the given name
 	if err != nil {
 		utils.ErrorLogger(err)
-		http.Error(w, "Invalid Session/Cookie", http.StatusUnauthorized)
+		response := models.CheckLogin{
+			Valid: false,
+			ID: 0,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -161,6 +165,7 @@ func ValidateCookie(w http.ResponseWriter, r *http.Request) {
 	claims := &models.Claims{}
 
 	tokenStr := cookie.Value
+	fmt.Println("Received Token String:", tokenStr)
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is HMAC
@@ -178,12 +183,54 @@ func ValidateCookie(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Printing Claims for testing", claims)
 	
-	response := struct {
-		Valid bool 
-		ID int 
+	fmt.Println("Decoded Claims is:", claims)
+
+	if claims.ID > 1000 {
+		fmt.Println("claims id > 1000")
+		response := models.CheckLogin{
+			Valid: true,
+			ID: claims.ID,
+		}
+		json.NewEncoder(w).Encode(response)
+	}else {
+		fmt.Println("claims id < 1000")
+		response := models.CheckLogin{
+			Valid: false,
+			ID: claims.ID,
+		}
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+//logout handler
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Inside /logout handler")
+
+	//remove the Value Attribute from the cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value: "",
+		Path:     "/",
+		Domain: "localhost",
+		HttpOnly: false, // this allows JavaScript to access the cookie.
+		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		Expires:  time.Now().Add(-1 * time.Hour),
+		MaxAge: -1,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	
+
+	// cookieVal := cookie.Value
+
+	response := struct{
+		Success bool
+		Message string
+		CookieValue string
 	}{
-		Valid : true,
-		ID : claims.ID,
+		Success: true,
+		Message: "Logout Successful",
+		CookieValue: "deleted",
 	}
 
 	json.NewEncoder(w).Encode(response)

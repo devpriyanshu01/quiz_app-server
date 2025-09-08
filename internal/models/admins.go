@@ -21,6 +21,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// type CheckCookieResponse {
+type CheckLogin struct {
+	Valid bool `json:"valid`
+	ID int `json:"id"`
+}
+
+// type LogoutResponse struct{
 
 // }
