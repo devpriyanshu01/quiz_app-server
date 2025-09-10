@@ -127,6 +127,7 @@ func SaveOneQuestion(w http.ResponseWriter, r *http.Request) {
 
 	//assign extracted id from cookie to question admin_id column
 	question.AdminID = admin.ID
+	question.PointsCorrect = 100 //default value points_correct
 
 	//connect db
 	db, err := sqlconnect.ConnectDb()
@@ -171,4 +172,73 @@ func SaveOneQuestion(w http.ResponseWriter, r *http.Request) {
 	response.IsSaved = true
 	json.NewEncoder(w).Encode(response)
 
+}
+
+
+//get saved questions for a specific quiz_id
+func GetQuestions(w http.ResponseWriter, r *http.Request) {
+	//get the request sent
+	var req models.GetQuizId
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "Error parsing the request", http.StatusBadRequest)
+		return
+	}
+
+	//validate the user/cookie
+	_, err = utils.ValidateCookie(r)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to validate the cookie/user", http.StatusUnauthorized)
+		return
+	}
+
+	//connect db
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect to database", http.StatusInternalServerError)
+		return
+	}
+    defer db.Close()
+
+	//storage for the fetched questions
+	var fetchedQuestions []models.Question
+
+	//generate the query string
+	query := "SELECT question_text, option_a, option_b, option_c, option_d, correct_answer, points_correct FROM questions WHERE quiz_id = ?"
+
+	//query db
+	rows, err := db.Query(query, req.QuizID)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "error while querying database", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	//scan the values from rows fetch from db
+	for rows.Next() {
+		var q models.Question //instance of question model to save one question
+		err := rows.Scan(&q.QuestionText, &q.OptionA, &q.OptionB, &q.OptionC, &q.OptionD, &q.CorrectAnswer, &q.PointsCorrect)
+		if err != nil {
+			utils.ErrorLogger(err)
+			http.Error(w, "failed to insert/scan values to output variable", http.StatusInternalServerError)
+			return
+		}
+		fetchedQuestions = append(fetchedQuestions, q)
+	}
+
+	//send response
+	type GetQuestionResponse struct {
+		Success bool `json:"success"`
+		Payload []models.Question `json:"payload"`
+	}
+	response := GetQuestionResponse{
+		Success: true,
+		Payload: fetchedQuestions,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

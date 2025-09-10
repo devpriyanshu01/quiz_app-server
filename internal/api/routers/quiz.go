@@ -10,5 +10,6 @@ func QuizRouter() *http.ServeMux {
 	mux.HandleFunc("POST /createquiz", handlers.CreateNewQuizHandler)
 	mux.HandleFunc("GET /listmyquizzes", handlers.ListMyQuizzes)
 	mux.HandleFunc("GET /savequestion", handlers.SaveOneQuestion)
+	mux.HandleFunc("POST /getquestions", handlers.GetQuestions)
 	return mux
 }

@@ -13,5 +13,10 @@ type Question struct {
 	OptionC string `json:"option_c"`
 	OptionD string `json:"option_d"`
 	CorrectAnswer string `json:"correct_answer"`
+	PointsCorrect int `json:"points_correct"`
 	AdminID int `json:"admin_id"`
+}
+
+type GetQuizId struct {
+	QuizID int `json:"quiz_id"`
 }
