@@ -9,7 +9,10 @@ func QuizRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /createquiz", handlers.CreateNewQuizHandler)
 	mux.HandleFunc("GET /listmyquizzes", handlers.ListMyQuizzes)
-	mux.HandleFunc("GET /savequestion", handlers.SaveOneQuestion)
+	mux.HandleFunc("POST /savequestion", handlers.SaveOneQuestion)
 	mux.HandleFunc("POST /getquestions", handlers.GetQuestions)
+	mux.HandleFunc("POST /quiz/delete", handlers.DeleteQuiz)
+	mux.HandleFunc("POST /quiz/activate", handlers.ActivateQuiz)
+	mux.HandleFunc("GET /quiz/join/{quiz_id}", handlers.StartQuiz)
 	return mux
 }

@@ -3,11 +3,15 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"quiz_app/internal/models"
 	"quiz_app/internal/repository/sqlconnect"
 	"quiz_app/pkg/utils"
 	"strings"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 func CreateNewQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +56,7 @@ func CreateNewQuizHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retreive inserted id of the quiz", http.StatusInternalServerError)
 		return
 	}
-	
+
 	response := struct {
 		QuizID int
 	}{
@@ -62,7 +66,7 @@ func CreateNewQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
-		
+
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {
 		utils.ErrorLogger(err)
@@ -70,7 +74,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	
+
 	//validate the cookie/user
 	admin, err := utils.ValidateCookie(r)
 	if err != nil {
@@ -78,7 +82,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to validate cookie/user", http.StatusBadRequest)
 		return
 	}
-	
+
 	//get the all quizzes title
 	var quizTitles []models.Quiz
 	query := "SELECT id, title FROM quizzes WHERE admin_id = ?"
@@ -89,7 +93,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rows.Close()
-	
+
 	for rows.Next() {
 		var quiz models.Quiz
 		err := rows.Scan(&quiz.ID, &quiz.Title)
@@ -100,7 +104,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 		}
 		quizTitles = append(quizTitles, quiz)
 	}
-	
+
 	json.NewEncoder(w).Encode(quizTitles)
 }
 
@@ -144,7 +148,7 @@ func SaveOneQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 	response := qResponse{
 		IsSaved: false,
-	}	
+	}
 
 	//create the query for db insertion
 	query := "INSERT INTO questions(quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, admin_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
@@ -174,8 +178,7 @@ func SaveOneQuestion(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-//get saved questions for a specific quiz_id
+// get saved questions for a specific quiz_id
 func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	//get the request sent
 	var req models.GetQuizId
@@ -201,7 +204,7 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to connect to database", http.StatusInternalServerError)
 		return
 	}
-    defer db.Close()
+	defer db.Close()
 
 	//storage for the fetched questions
 	var fetchedQuestions []models.Question
@@ -232,7 +235,7 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 
 	//send response
 	type GetQuestionResponse struct {
-		Success bool `json:"success"`
+		Success bool              `json:"success"`
 		Payload []models.Question `json:"payload"`
 	}
 	response := GetQuestionResponse{
@@ -241,4 +244,124 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+func DeleteQuiz(w http.ResponseWriter, r *http.Request) {
+	var quizId models.DeleteQuiz
+	err := json.NewDecoder(r.Body).Decode(&quizId)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid Quiz_ID", http.StatusBadRequest)
+		return
+	}
+
+	//validate the cookie/user
+	admin, err := utils.ValidateCookie(r)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to validate user/cookie", http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Decoded Admin", admin)
+
+	//connect database
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect to db", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	//delete query
+	query := "DELETE FROM quizzes WHERE id = ?"
+	_, err = db.Exec(query, quizId.QuizId)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to delete the quiz", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("quiz deleted"))
+}
+
+func ActivateQuiz(w http.ResponseWriter, r *http.Request) {
+	var quizId models.ActivateQuiz
+	err := json.NewDecoder(r.Body).Decode(&quizId)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid Quiz_ID", http.StatusBadRequest)
+		return
+	}
+
+	//validate the cookie/user
+	admin, err := utils.ValidateCookie(r)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to validate user/cookie", http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Decoded Admin", admin)
+
+	//connect database
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect to db", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	//activate query
+	query := "UPDATE quizzes SET active = ? WHERE id = ?"
+	_, err = db.Exec(query, true, quizId.ID)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to activate the quiz", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("quiz activated"))
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for testing; tighten this in production
+	},
+}
+
+func StartQuiz(w http.ResponseWriter, r *http.Request) {
+	// var quizId models.JoinQuiz
+	// err := json.NewDecoder(r.Body).Decode(&quizId)
+	// if err != nil {
+	// 	utils.ErrorLogger(err)
+	// 	http.Error(w, "failed to start quiz as quiz_id not provided", http.StatusBadRequest)
+	// 	return
+	// }
+	quizId := r.PathValue("quiz_id")
+	fmt.Println("quizId is:", quizId)
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Message Received:", string(message))
+
+		time.Sleep(3 * time.Second)
+
+		//write message back to the client
+		if err := conn.WriteMessage(messageType, message); err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }

@@ -20,3 +20,15 @@ type Question struct {
 type GetQuizId struct {
 	QuizID int `json:"quiz_id"`
 }
+
+type DeleteQuiz struct {
+	QuizId int `json:"quiz_id"`
+}
+
+type ActivateQuiz struct {
+	ID int `json:"id"`
+}
+
+type JoinQuiz struct {
+	QuizId int `json:"quiz_id"`
+}
