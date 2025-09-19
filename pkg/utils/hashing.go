@@ -90,7 +90,6 @@ func SignToken(userId int, email string, fullName string) (string, error) {
 		claims["exp"] = jwt.NewNumericDate(time.Now().Add(15 * time.Minute))
 	}
 
-	//generate the token using claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	//sign the token with jwt secret
@@ -148,3 +147,36 @@ func CheckJwtToken(r *http.Request, w http.ResponseWriter) jwt.MapClaims {
 	}
 	return decodedClaims
 }
+
+func SignTokenPlayers(id string, name string) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	jwtExpiresIn := os.Getenv("JWT_EXPIRES_IN")
+
+	claims := jwt.MapClaims{
+		"id": id,
+		"name" : name,
+	}
+
+	log.Println("claims printing: ---------", claims)
+
+	if jwtExpiresIn != "" {
+		duration, err := time.ParseDuration(jwtExpiresIn)
+		if err != nil {
+			return "", err
+		}
+		claims["exp"] = jwt.NewNumericDate(time.Now().Add(duration))
+	} else {
+		claims["exp"] = jwt.NewNumericDate(time.Now().Add(15 * time.Minute))
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	//sign the token with jwt secret
+	signedToken, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+

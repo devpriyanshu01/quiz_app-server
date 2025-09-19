@@ -14,5 +14,6 @@ func QuizRouter() *http.ServeMux {
 	mux.HandleFunc("POST /quiz/delete", handlers.DeleteQuiz)
 	mux.HandleFunc("POST /quiz/activate", handlers.ActivateQuiz)
 	mux.HandleFunc("GET /quiz/join/{quiz_id}", handlers.StartQuiz)
+	mux.HandleFunc("GET /quiz/validate/{quizId}", handlers.ValidateQuiz)
 	return mux
 }

@@ -1,8 +1,9 @@
 package models
 
 type Quiz struct {
-	ID int
-	Title string
+	ID int `json:"id"`
+	Title string `json:"title"`
+	Active bool `json:"active"`
 }
 
 type Question struct {

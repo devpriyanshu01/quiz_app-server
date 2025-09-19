@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -85,7 +86,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 
 	//get the all quizzes title
 	var quizTitles []models.Quiz
-	query := "SELECT id, title FROM quizzes WHERE admin_id = ?"
+	query := "SELECT id, title, active  FROM quizzes WHERE admin_id = ?"
 	rows, err := db.Query(query, admin.ID)
 	if err != nil {
 		utils.ErrorLogger(err)
@@ -96,7 +97,7 @@ func ListMyQuizzes(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var quiz models.Quiz
-		err := rows.Scan(&quiz.ID, &quiz.Title)
+		err := rows.Scan(&quiz.ID, &quiz.Title, &quiz.Active)
 		if err != nil {
 			utils.ErrorLogger(err)
 			http.Error(w, "failed to scan quiz title", http.StatusInternalServerError)
@@ -286,6 +287,7 @@ func DeleteQuiz(w http.ResponseWriter, r *http.Request) {
 }
 
 func ActivateQuiz(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("inside activate quiz")
 	var quizId models.ActivateQuiz
 	err := json.NewDecoder(r.Body).Decode(&quizId)
 	if err != nil {
@@ -293,6 +295,8 @@ func ActivateQuiz(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Quiz_ID", http.StatusBadRequest)
 		return
 	}
+
+	fmt.Println("quizId", quizId)
 
 	//validate the cookie/user
 	admin, err := utils.ValidateCookie(r)
@@ -358,10 +362,52 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 
 		time.Sleep(3 * time.Second)
 
+		msgToClient := "I'm Backend Webscoket Server for " + quizId
 		//write message back to the client
-		if err := conn.WriteMessage(messageType, message); err != nil {
+		if err := conn.WriteMessage(messageType, []byte(msgToClient)); err != nil {
 			log.Println(err)
 			return
 		}
 	}
+}
+
+func ValidateQuiz(w http.ResponseWriter, r *http.Request){
+	quizId := r.PathValue("quizId")
+
+	//validate cookie for player later
+
+	//connect db
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect to db", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	//query
+	query := "SELECT title FROM quizzes where id = ?"
+	row := db.QueryRow(query, quizId)
+	
+	//variable for storing fetched title
+	var title string
+	err = row.Scan(&title)
+	if err == sql.ErrNoRows {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid Quiz Id", http.StatusUnauthorized)
+		return
+	}
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "Invalid Quiz Id", http.StatusUnauthorized)
+		return
+	}
+
+	response := struct {
+		IsValid bool `json:"is_valid"`
+	}{
+		IsValid: true,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
