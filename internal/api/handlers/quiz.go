@@ -9,6 +9,7 @@ import (
 	"quiz_app/internal/models"
 	"quiz_app/internal/repository/sqlconnect"
 	"quiz_app/pkg/utils"
+	"strconv"
 	"strings"
 	"time"
 
@@ -328,6 +329,7 @@ func ActivateQuiz(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("quiz activated"))
 }
 
+// upgrader for upgrading to websocket
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true // Allow all origins for testing; tighten this in production
@@ -335,13 +337,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func StartQuiz(w http.ResponseWriter, r *http.Request) {
-	// var quizId models.JoinQuiz
-	// err := json.NewDecoder(r.Body).Decode(&quizId)
-	// if err != nil {
-	// 	utils.ErrorLogger(err)
-	// 	http.Error(w, "failed to start quiz as quiz_id not provided", http.StatusBadRequest)
-	// 	return
-	// }
 	quizId := r.PathValue("quiz_id")
 	fmt.Println("quizId is:", quizId)
 
@@ -352,6 +347,15 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	//connect db
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect to db", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
 	for {
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
@@ -360,18 +364,58 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Println("Message Received:", string(message))
 
-		time.Sleep(3 * time.Second)
+		//for quiz to start
+		if string(message) == "begin quiz" {
+			fmt.Println("condition to start quiz met.")
+			query := "SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, points_correct FROM questions where quiz_id = ?"
+			rows, err := db.Query(query, quizId)
+			if err != nil {
+				utils.ErrorLogger(err)
+				http.Error(w, "failed to fetch questions", http.StatusInternalServerError)
+				return
+			}
+			//for storing questions
+			var questions []models.FetchQuestions
+			for rows.Next() {
+				var question models.FetchQuestions
+				err = rows.Scan(&question.ID, &question.QuestionText, &question.OptionA, &question.OptionB, &question.OptionC, &question.OptionD, &question.CorrectAnswer, &question.PointsCorrect)
+				if err != nil {
+					utils.ErrorLogger(err)
+					http.Error(w, "failed to store questions", http.StatusInternalServerError)
+					return
+				}
+				questions = append(questions, question)
+			}
+			//send message to client every 20s
+			for _, ques := range questions {
+				byteQues, err := json.Marshal(ques)
+				if err != nil {
+					utils.ErrorLogger(err)
+					http.Error(w, "error marshalling question", http.StatusInternalServerError)
+					return
+				}
+				err = conn.WriteMessage(messageType, byteQues)
+				if err != nil {
+					utils.ErrorLogger(err)
+					http.Error(w, "failed to send questions", http.StatusInternalServerError)
+					return
+				}
 
-		msgToClient := "I'm Backend Webscoket Server for " + quizId
+				time.Sleep(15 * time.Second)
+			}
+		}
+
+
+		msgToClient := 1
 		//write message back to the client
-		if err := conn.WriteMessage(messageType, []byte(msgToClient)); err != nil {
+		if err := conn.WriteMessage(messageType, []byte(strconv.Itoa(msgToClient))); err != nil {
 			log.Println(err)
 			return
 		}
 	}
 }
 
-func ValidateQuiz(w http.ResponseWriter, r *http.Request){
+func ValidateQuiz(w http.ResponseWriter, r *http.Request) {
 	quizId := r.PathValue("quizId")
 
 	//validate cookie for player later
@@ -388,7 +432,7 @@ func ValidateQuiz(w http.ResponseWriter, r *http.Request){
 	//query
 	query := "SELECT title FROM quizzes where id = ?"
 	row := db.QueryRow(query, quizId)
-	
+
 	//variable for storing fetched title
 	var title string
 	err = row.Scan(&title)

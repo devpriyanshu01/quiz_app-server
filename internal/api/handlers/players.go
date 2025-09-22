@@ -20,6 +20,8 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Received Player Data:", playerData)
+
 	//set indian location
 	ist, err := time.LoadLocation("Asia/Kolkata")
 	if err != nil {
@@ -77,16 +79,18 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: false, // this allows JavaScript to access the cookie.
-		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		Secure:   true,  // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteLaxMode,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
-		Token string `json:"token"`
+		Token   string `json:"token"`
+		Success bool   `json:"success"`
 	}{
-		Token: token,
+		Token:   token,
+		Success: true,
 	}
 	json.NewEncoder(w).Encode(response)
 

@@ -18,6 +18,10 @@ type Question struct {
 	AdminID int `json:"admin_id"`
 }
 
+type FetchQuestions struct {
+	ID int `json:"id"`
+	Question
+}
 type GetQuizId struct {
 	QuizID int `json:"quiz_id"`
 }
