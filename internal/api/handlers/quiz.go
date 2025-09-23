@@ -11,6 +11,7 @@ import (
 	"quiz_app/pkg/utils"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -347,6 +348,7 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+
 	//connect db
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {
@@ -363,6 +365,19 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println("Message Received:", string(message))
+
+		//save client to an struct
+		var connectedClients []models.ConnectedClients
+		oneClient := models.ConnectedClients{
+			Conn : conn,
+			QuizId : quizId,
+			Name : string(message),
+		}
+
+		connectedClients = append(connectedClients, oneClient)
+		fmt.Println("All Connected Client are ------------------")
+		fmt.Println(connectedClients)
+
 
 		//for quiz to start
 		if string(message) == "begin quiz" {
@@ -455,3 +470,53 @@ func ValidateQuiz(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+//Broadcasting Logic Begins here
+func BroadcastQuestions(w http.ResponseWriter, r *http.Request){
+	quizId := r.PathValue("quizId")
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to establish websocket connection", http.StatusInternalServerError)
+		return
+	}
+
+	hub := getOrCreateHub(quizId)
+	hub.Register <- conn
+
+	for {
+		_, msg , err := conn.ReadMessage()
+		if err != nil {
+			hub.Unregister <- conn
+			break
+		}
+		hub.Broadcast <- msg
+	}
+}
+
+//Creating Global Repository for managing Hubs
+var quizHubs = make(map[string]*models.QuizHub)
+var mu sync.Mutex
+
+//Initialize a hub for each request
+func getOrCreateHub(quizId string) *models.QuizHub {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if hub, exists := quizHubs[quizId] ; exists {
+		return hub
+	}	
+
+	hub := &models.QuizHub{
+		QuizId: quizId,
+		Clients : make(map[*websocket.Conn]bool),
+		Broadcast: make(chan []byte),
+		Register: make(chan *websocket.Conn),
+		Unregister: make(chan *websocket.Conn),
+	}
+
+	quizHubs[quizId] = hub
+	go hub.Run()
+	return hub
+}
+
