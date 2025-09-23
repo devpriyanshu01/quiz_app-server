@@ -348,7 +348,6 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-
 	//connect db
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {
@@ -369,15 +368,14 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 		//save client to an struct
 		var connectedClients []models.ConnectedClients
 		oneClient := models.ConnectedClients{
-			Conn : conn,
-			QuizId : quizId,
-			Name : string(message),
+			Conn:   conn,
+			QuizId: quizId,
+			Name:   string(message),
 		}
 
 		connectedClients = append(connectedClients, oneClient)
 		fmt.Println("All Connected Client are ------------------")
 		fmt.Println(connectedClients)
-
 
 		//for quiz to start
 		if string(message) == "begin quiz" {
@@ -419,7 +417,6 @@ func StartQuiz(w http.ResponseWriter, r *http.Request) {
 				time.Sleep(15 * time.Second)
 			}
 		}
-
 
 		msgToClient := 1
 		//write message back to the client
@@ -471,10 +468,12 @@ func ValidateQuiz(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-//Broadcasting Logic Begins here
-func BroadcastQuestions(w http.ResponseWriter, r *http.Request){
+// Broadcasting Logic Begins here
+func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Broadcast Route Hits.....")
 	quizId := r.PathValue("quizId")
-	conn, err := upgrader.Upgrade(w, r, nil)
+	fmt.Println("Quiz ID:", quizId)
+	conn, err := upgrader.Upgrade(w, r, nil) //upgrade to websocket
 	if err != nil {
 		utils.ErrorLogger(err)
 		http.Error(w, "failed to establish websocket connection", http.StatusInternalServerError)
@@ -485,33 +484,50 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request){
 	hub.Register <- conn
 
 	for {
-		_, msg , err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			hub.Unregister <- conn
 			break
 		}
-		hub.Broadcast <- msg
+		//check condition to start sending question
+		if string(msg) == "start quiz" {
+			fmt.Println("Condition to start Quiz met....")
+			questions := fetchQuestions(quizId, w)
+
+			//send question every 20s
+			for _, ques := range questions {
+				quesByte, err := json.Marshal(ques)
+				if err != nil {
+					utils.ErrorLogger(err)
+					http.Error(w, "failed to marshal question", http.StatusInternalServerError)
+					return
+				}
+				time.Sleep(20 * time.Second)
+				hub.Broadcast <- quesByte
+			}
+		}
+
 	}
 }
 
-//Creating Global Repository for managing Hubs
+// Creating Global Repository for managing Hubs
 var quizHubs = make(map[string]*models.QuizHub)
 var mu sync.Mutex
 
-//Initialize a hub for each request
+// Initialize a hub for each request
 func getOrCreateHub(quizId string) *models.QuizHub {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if hub, exists := quizHubs[quizId] ; exists {
+	if hub, exists := quizHubs[quizId]; exists {
 		return hub
-	}	
+	}
 
 	hub := &models.QuizHub{
-		QuizId: quizId,
-		Clients : make(map[*websocket.Conn]bool),
-		Broadcast: make(chan []byte),
-		Register: make(chan *websocket.Conn),
+		QuizId:     quizId,
+		Clients:    make(map[*websocket.Conn]bool),
+		Broadcast:  make(chan []byte),
+		Register:   make(chan *websocket.Conn),
 		Unregister: make(chan *websocket.Conn),
 	}
 
@@ -520,3 +536,35 @@ func getOrCreateHub(quizId string) *models.QuizHub {
 	return hub
 }
 
+// function for fetching all questions for a quizId
+func fetchQuestions(quizId string, w http.ResponseWriter) []models.FetchQuestions {
+	//connect database
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to connect with db", http.StatusInternalServerError)
+		return nil
+	}
+	defer db.Close()
+
+	query := "SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, points_correct FROM questions where quiz_id = ?"
+	rows, err := db.Query(query, quizId)
+	if err != nil {
+		utils.ErrorLogger(err)
+		http.Error(w, "failed to fetch questions", http.StatusInternalServerError)
+		return nil
+	}
+	//for storing questions
+	var questions []models.FetchQuestions
+	for rows.Next() {
+		var question models.FetchQuestions
+		err = rows.Scan(&question.ID, &question.QuestionText, &question.OptionA, &question.OptionB, &question.OptionC, &question.OptionD, &question.CorrectAnswer, &question.PointsCorrect)
+		if err != nil {
+			utils.ErrorLogger(err)
+			http.Error(w, "failed to store questions", http.StatusInternalServerError)
+			return nil
+		}
+		questions = append(questions, question)
+	}
+	return questions
+}

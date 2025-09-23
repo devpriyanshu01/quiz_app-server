@@ -49,7 +49,7 @@ type ConnectedClients struct {
 type QuizHub struct {
 	QuizId string
 	Clients map[*websocket.Conn]bool
-	Broadcast chan []byte
+	Broadcast chan []byte 
 	Register chan *websocket.Conn
 	Unregister chan *websocket.Conn
 }
@@ -63,9 +63,9 @@ func (h *QuizHub) Run(){
 		case conn := <- h.Unregister:
 			delete(h.Clients, conn)
 			conn.Close()
-		case message := <- h.Broadcast:
+		case ques := <- h.Broadcast:
 			for conn := range h.Clients {
-				conn.WriteMessage(websocket.TextMessage, message)
+				conn.WriteMessage(websocket.TextMessage, ques)
 			}
 		}
 	}
