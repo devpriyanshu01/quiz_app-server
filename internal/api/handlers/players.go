@@ -12,6 +12,7 @@ import (
 )
 
 func SavePlayers(w http.ResponseWriter, r *http.Request) {
+	//extract player data
 	var playerData models.PlayerData
 	err := json.NewDecoder(r.Body).Decode(&playerData)
 	if err != nil {
@@ -75,7 +76,7 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 
 	//send token as a response or a cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:     "Bearer Player",
+		Name:     "Player Token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: false, // this allows JavaScript to access the cookie.
@@ -95,3 +96,6 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 
 }
+
+//save answers for answered question for players
+

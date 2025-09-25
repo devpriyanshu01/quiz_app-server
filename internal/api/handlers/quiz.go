@@ -483,6 +483,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	hub := getOrCreateHub(quizId)
 	hub.Register <- conn
 
+	questions := []models.FetchQuestions{}
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -492,21 +493,35 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 		//check condition to start sending question
 		if string(msg) == "start quiz" {
 			fmt.Println("Condition to start Quiz met....")
-			questions := fetchQuestions(quizId, w)
+			questions = fetchQuestions(quizId, w)
+			fmt.Println(questions)
+			fmt.Println("len(questions):", len(questions))
+		}
 
-			//send question every 20s
-			for _, ques := range questions {
-				quesByte, err := json.Marshal(ques)
+		fmt.Println("len(questions):", len(questions))
+		//print question
+		for _, q := range questions {
+			fmt.Println("----------------------------------------------------------------------------")
+			fmt.Println(q)
+		}
+
+		//send each question after receiving trigger from fe
+		if string(msg) == "next ques" {
+			ticker := time.NewTicker(5 * time.Second)
+			defer ticker.Stop()
+			fmt.Println("----- Demanded next ques -----")
+
+			for _, currQues := range questions {
+				quesInByte, err := json.Marshal(currQues)
 				if err != nil {
 					utils.ErrorLogger(err)
 					http.Error(w, "failed to marshal question", http.StatusInternalServerError)
 					return
 				}
-				time.Sleep(20 * time.Second)
-				hub.Broadcast <- quesByte
+				<- ticker.C
+				hub.Broadcast <- quesInByte
 			}
 		}
-
 	}
 }
 
@@ -538,6 +553,7 @@ func getOrCreateHub(quizId string) *models.QuizHub {
 
 // function for fetching all questions for a quizId
 func fetchQuestions(quizId string, w http.ResponseWriter) []models.FetchQuestions {
+	fmt.Println("fetchquestions hit...................")
 	//connect database
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {

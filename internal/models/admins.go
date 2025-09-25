@@ -22,10 +22,7 @@ type Claims struct {
 }
 
 type CheckLogin struct {
-	Valid bool `json:"valid`
+	Valid bool `json:"valid"`
 	ID int `json:"id"`
 }
 
-// type LogoutResponse struct{
-
-// }
