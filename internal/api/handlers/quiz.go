@@ -507,7 +507,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 		//send each question after receiving trigger from fe
 		if string(msg) == "next ques" {
-			ticker := time.NewTicker(5 * time.Second)
+			ticker := time.NewTicker(25 * time.Second)
 			defer ticker.Stop()
 			fmt.Println("----- Demanded next ques -----")
 
@@ -518,9 +518,25 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to marshal question", http.StatusInternalServerError)
 					return
 				}
-				<- ticker.C
+				<-ticker.C
 				hub.Broadcast <- quesInByte
 			}
+		}
+
+		//handle save answer
+		fmt.Println("Received Msg:", string(msg))
+		var saveans = models.SaveAns{}
+		fmt.Println("Before Unmarshalling.....")
+		fmt.Println(string(msg))
+		msgString := string(msg)
+		if msgString[0] == '{' {
+			fmt.Println("Inside the condn - {")
+			err = json.Unmarshal(msg, &saveans)
+			if err != nil {
+				utils.ErrorLogger(err)
+				return
+			}
+			SaveAnsToDb(&saveans, conn)
 		}
 	}
 }
@@ -583,4 +599,45 @@ func fetchQuestions(quizId string, w http.ResponseWriter) []models.FetchQuestion
 		questions = append(questions, question)
 	}
 	return questions
+}
+
+// function to save the answer to database
+func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
+	//validate cookie
+	decodedPlayerDetails := utils.ValidateCookiePlayers2(saveans.Token, conn)
+	if decodedPlayerDetails == nil {
+		return
+	}	
+
+	//print decoded player from the cookie
+	fmt.Println("Decoded Player Details:", decodedPlayerDetails)
+
+	//connect db
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		errObj := utils.CreateSocketErrorObj("failed to connect db")
+		utils.ErrorSocket(err, conn, errObj)
+		return
+	}
+	defer db.Close()
+
+	//query string
+	query := "INSERT INTO answers(player_id, question_id, quiz_id, choosen_ans, marks) VALUES(?, ?, ?, ?, ?)"
+	result, err := db.Exec(query, decodedPlayerDetails.Id, saveans.QuestionId, saveans.QuizId, saveans.ChoosenAns, saveans.Marks)
+	if err != nil {
+		errObj := utils.CreateSocketErrorObj("Player Answer Save Failed")
+		utils.ErrorSocket(err, conn, errObj)
+		return
+	}
+	
+	//check how many rows udpated
+	rowsCount, err := result.RowsAffected()
+	if err != nil {
+		errObj := utils.CreateSocketErrorObj("failed to get number of updated player")
+		utils.ErrorSocket(err, conn, errObj)
+		return
+	}
+
+	fmt.Println(rowsCount, " row update for player ", decodedPlayerDetails.Name)
+
 }
