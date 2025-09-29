@@ -70,3 +70,8 @@ func (h *QuizHub) Run(){
 		}
 	}
 }
+
+//testing...
+type TestStruct struct {
+	Name string `json:"name"`
+}

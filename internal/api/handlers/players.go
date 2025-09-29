@@ -175,7 +175,7 @@ func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoard
 	defer db.Close()
 
 	//leaderboard store
-	leaderboardStore := []models.LeaderData{}
+	// leaderboardStore := []models.LeaderData{}
 
 	//query string
 	query := "SELECT marks FROM answers WHERE player_id = ? and question_id = ?"
