@@ -33,3 +33,21 @@ type PlayerIdName struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
+
+// for fetching leaderboard data
+type GetLeaderBoardBody struct {
+	Cookie string `json:"cookie"`
+	QuestionId int `json:"question_id"`
+	QuizId int `json:"quiz_id"`
+}
+
+// send marks for each player
+type MarksData struct {
+	Role string `json:"role"`
+	PlayerId string `json:"player_id"`
+	PlayerName string `json:"player_name"`
+	Marks int `json:"marks"`
+}
+
+
+

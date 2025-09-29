@@ -507,7 +507,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 		//send each question after receiving trigger from fe
 		if string(msg) == "next ques" {
-			ticker := time.NewTicker(25 * time.Second)
+			ticker := time.NewTicker(45 * time.Second)
 			defer ticker.Stop()
 			fmt.Println("----- Demanded next ques -----")
 

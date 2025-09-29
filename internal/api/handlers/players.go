@@ -9,6 +9,8 @@ import (
 	"quiz_app/pkg/utils"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 func SavePlayers(w http.ResponseWriter, r *http.Request) {
@@ -154,3 +156,60 @@ func SaveAnswer(w http.ResponseWriter, r *http.Request) {
 
 }
 */
+
+// get leaderboard
+func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoardBody) {
+	//get player id from cookie
+	decodedPlayer := utils.ValidateCookiePlayers2(leaderboardBody.Cookie, conn)
+
+	//connect db
+	db, err := sqlconnect.ConnectDb()
+	if err != nil {
+		errObj := models.SocketError{
+			Type:    "error",
+			Message: "failed to connect db",
+		}
+		utils.ErrorSocket(err, conn, &errObj)
+		return
+	}
+	defer db.Close()
+
+	//leaderboard store
+	leaderboardStore := []models.LeaderData{}
+
+	//query string
+	query := "SELECT marks FROM answers WHERE player_id = ? and question_id = ?"
+	row := db.QueryRow(query, decodedPlayer.Id, leaderboardBody.QuestionId)
+
+	//variable for storing fetched marks
+	marksData := models.MarksData{
+		Role: "leaderboard",
+		PlayerId: decodedPlayer.Id,
+		PlayerName: decodedPlayer.Name,
+		Marks: 0,
+	}
+	err = row.Scan(&marksData.Marks)
+	if err != nil {	//handle error
+		errObj := models.SocketError{
+			Type: "error",
+			Message: "failed to scan value is marks varialbe",
+		}
+		utils.ErrorSocket(err, conn, &errObj)
+		return
+	}
+
+	//
+
+	//convert marksData to slice of byte for sending using websocket
+	marksDataBytes, err := json.Marshal(marksData)
+	if err != nil {
+		errObj := models.SocketError{
+			Type: "error",
+			Message: "failed to marshal marks data",
+		}
+		utils.ErrorSocket(err, conn, &errObj)
+	}
+	//send marks data to client
+	conn.WriteMessage(websocket.TextMessage, marksDataBytes)
+
+}

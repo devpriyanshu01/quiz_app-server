@@ -9,5 +9,7 @@ func PlayersRouters() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /players/save", handlers.SavePlayers)
 	// mux.HandleFunc("POST /players/save/answer", handlers.SaveAnswer)
+	mux.HandleFunc("POST /players/leaderboard", handlers.SavePlayers)
+
 	return mux
 }
