@@ -468,6 +468,10 @@ func ValidateQuiz(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+//declare a variable for storing the marks of each player
+var playersMarks = make(map[string]models.PlayerDetails)
+var playersInQuiz = make(map[int][]string)
+
 // Broadcasting Logic Begins here
 func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Broadcast Route Hits.....")
@@ -512,7 +516,11 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("----- Demanded next ques -----")
 
 			for _, currQues := range questions {
-				quesInByte, err := json.Marshal(currQues)
+				quesData := models.QuesData{
+					Type: "question",
+					FetchQuestions: currQues,
+				}
+				quesInByte, err := json.Marshal(quesData)
 				if err != nil {
 					utils.ErrorLogger(err)
 					http.Error(w, "failed to marshal question", http.StatusInternalServerError)
@@ -523,6 +531,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		
 		//handle save answer
 		fmt.Println("Received Msg:", string(msg))
 		var saveans = models.SaveAns{}
@@ -537,6 +546,11 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			SaveAnsToDb(&saveans, conn)
+		}
+
+		//send the leaderboard details to client when asked for it.
+		if string(msg) == "send leaderboard" {
+			sendLeaderboardData(conn, saveans.QuizId)
 		}
 	}
 }
@@ -612,6 +626,29 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	//print decoded player from the cookie
 	fmt.Println("Decoded Player Details:", decodedPlayerDetails)
 
+	//check if the player already exists or not, if not add new entry of player
+	_, exists := playersMarks[decodedPlayerDetails.Id] 
+	if !exists {
+		playersMarks[decodedPlayerDetails.Id] = models.PlayerDetails{
+			Name: decodedPlayerDetails.Name,
+			Marks: 0,
+		} 
+	}
+
+	//store the id of players for each quizzes
+	_, exist := playersInQuiz[saveans.QuizId]
+	if !exist {
+		playersInQuiz[saveans.QuizId] = append(playersInQuiz[saveans.QuizId], decodedPlayerDetails.Id)
+	}
+
+	//save the sent marks of the player
+	currPlayer := playersMarks[decodedPlayerDetails.Id]
+	currPlayer.Marks = currPlayer.Marks + saveans.Marks	//add the marks of curr question 
+	playersMarks[decodedPlayerDetails.Id] = currPlayer
+
+	//print the details of current player
+	fmt.Println("Current Player Details:------ ", playersMarks[decodedPlayerDetails.Id])
+
 	//connect db
 	db, err := sqlconnect.ConnectDb()
 	if err != nil {
@@ -640,4 +677,31 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 
 	fmt.Println(rowsCount, " row update for player ", decodedPlayerDetails.Name)
 
+}
+
+func sendLeaderboardData(conn *websocket.Conn, quizId int){
+	players := playersInQuiz[quizId]
+	
+	// finalLeaderboard := models.LeaderBoard {
+	// 	Type: "leaderboard",
+	// 	Data: ,
+	// }
+
+	//map of players details
+	playersDetails := make(map[string]models.PlayerDetails)
+	for _, playerId := range players {
+		value, exists := playersMarks[playerId]
+		if !exists {
+			log.Println("Failed to get player details in function sendLeaderBoardData")
+		}
+		playersDetails[playerId] = value
+	}
+
+	finalLeaderboard := models.LeaderBoard {
+		Type : "leaderboard",
+		Data: playersDetails,
+	}
+
+	fmt.Println("Printing Leaderboard-----------------------------------------------------")
+	fmt.Println(finalLeaderboard)
 }

@@ -49,5 +49,15 @@ type MarksData struct {
 	Marks int `json:"marks"`
 }
 
+//player Data for sending marks to client
+type PlayerDetails struct {
+	Name string `json:"name"`
+	Marks int `json:"marks"`
+}
+
+type LeaderBoard struct {
+	Type string `json:"type"`
+	Data map[string]PlayerDetails
+}
 
 

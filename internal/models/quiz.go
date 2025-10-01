@@ -71,7 +71,9 @@ func (h *QuizHub) Run(){
 	}
 }
 
-//testing...
-type TestStruct struct {
-	Name string `json:"name"`
+//question data
+type QuesData struct {
+	Type string `json:"type"`
+	FetchQuestions
 }
+
