@@ -487,6 +487,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	hub := getOrCreateHub(quizId)
 	hub.Register <- conn
 
+
 	questions := []models.FetchQuestions{}
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -546,6 +547,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			SaveAnsToDb(&saveans, conn)
+			//update global quiz store
 		}
 
 		//send the leaderboard details to client when asked for it.
@@ -626,28 +628,9 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	//print decoded player from the cookie
 	fmt.Println("Decoded Player Details:", decodedPlayerDetails)
 
-	//check if the player already exists or not, if not add new entry of player
-	_, exists := playersMarks[decodedPlayerDetails.Id] 
-	if !exists {
-		playersMarks[decodedPlayerDetails.Id] = models.PlayerDetails{
-			Name: decodedPlayerDetails.Name,
-			Marks: 0,
-		} 
-	}
-
-	//store the id of players for each quizzes
-	_, exist := playersInQuiz[saveans.QuizId]
-	if !exist {
-		playersInQuiz[saveans.QuizId] = append(playersInQuiz[saveans.QuizId], decodedPlayerDetails.Id)
-	}
-
-	//save the sent marks of the player
-	currPlayer := playersMarks[decodedPlayerDetails.Id]
-	currPlayer.Marks = currPlayer.Marks + saveans.Marks	//add the marks of curr question 
-	playersMarks[decodedPlayerDetails.Id] = currPlayer
-
-	//print the details of current player
-	fmt.Println("Current Player Details:------ ", playersMarks[decodedPlayerDetails.Id])
+	//current logic for maintaing a store
+	//call the fn to update the global store for current quiz and current player
+	updateGlobalQuizStore(*saveans, decodedPlayerDetails)
 
 	//connect db
 	db, err := sqlconnect.ConnectDb()
@@ -676,32 +659,46 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	}
 
 	fmt.Println(rowsCount, " row update for player ", decodedPlayerDetails.Name)
-
 }
 
 func sendLeaderboardData(conn *websocket.Conn, quizId int){
-	players := playersInQuiz[quizId]
+	leaderBoardData, exists := globalQuizStore[quizId]
+	if !exists {
+		log.Println("======= LEADER-BOARD DATA DOESN'T EXISTS ========")
+		return
+	}
+	leaderBoardDataByte, err := json.Marshal(leaderBoardData)
+	if err != nil {
+		errObj := utils.CreateSocketErrorObj("failed marshal leaderboard data")	
+		utils.ErrorSocket(err, conn, errObj)
+	}
+	//send leaderboard data to frontend using websocket.
+	conn.WriteMessage(websocket.TextMessage, leaderBoardDataByte)
+}
+
+//fn to update global quiz store
+func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.DecodePlayer){
+	fmt.Println("###################################### INSIDE CURRENT PLAYER DATA ############################")
+	quizId := quesData.QuizId
 	
-	// finalLeaderboard := models.LeaderBoard {
-	// 	Type: "leaderboard",
-	// 	Data: ,
-	// }
-
-	//map of players details
-	playersDetails := make(map[string]models.PlayerDetails)
-	for _, playerId := range players {
-		value, exists := playersMarks[playerId]
-		if !exists {
-			log.Println("Failed to get player details in function sendLeaderBoardData")
-		}
-		playersDetails[playerId] = value
+	currQuizData, exist := globalQuizStore[quizId]
+	if !exist {
+		log.Println("QuizId ", quizId, " doesn't exist in the global Store")
+		return
 	}
 
-	finalLeaderboard := models.LeaderBoard {
-		Type : "leaderboard",
-		Data: playersDetails,
+	currPlayerData, exists := currQuizData[decodedPlayer.Id]
+	if !exists {
+		log.Println("Player with id ", decodedPlayer.Id, " doesn't exists in quiz data- ", quizId)
+		return
 	}
+	
+	currPlayerData.Marks = currPlayerData.Marks + quesData.Marks
 
-	fmt.Println("Printing Leaderboard-----------------------------------------------------")
-	fmt.Println(finalLeaderboard)
+	//assign above updated data to global quiz store
+	globalQuizStore[quizId][decodedPlayer.Id] = currPlayerData
+
+	//log the updated quiz details
+	fmt.Println("************************************** LOGGING UPDATED GLOBAL STORE FOR CURRENT QUIZ ID ****************************")
+	fmt.Println(globalQuizStore[quizId])
 }

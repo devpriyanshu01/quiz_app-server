@@ -13,6 +13,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// create global marks store wiz. map of quiz_ids.
+var globalQuizStore = make(map[int](map[string]models.PlayerDetails))
+
+// handler to save the player to the database.
 func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	//extract player data
 	var playerData models.PlayerData
@@ -66,23 +70,32 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("rows:", rows)
 
-	//get token for sending cookie
-	// token, err := utils.SignTokenPlayers(id, playerData.Name)
-	// if err != nil {
-	// 	utils.ErrorLogger(err)
-	// 	http.Error(w, "failed to create cookie", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	//player cookie generation
-	//object with player id and name
 	playerObj := models.PlayerIdName{
 		Id:   id,
 		Name: playerData.Name,
 	}
 	fmt.Println("Encoding:", playerObj)
-	token := utils.CreatePlayerCookie(playerObj, w)
+	token := utils.CreatePlayerCookie(playerObj, w) //create player cookie
 	fmt.Println("Encoded PlayerObj:", token)
+
+	//add current player and current quiz to global quiz store
+	//for sending leaderboard data
+	_, exists := globalQuizStore[playerData.QuizId]	
+	if !exists {
+		globalQuizStore[playerData.QuizId] = make(map[string]models.PlayerDetails)
+		fmt.Println("Added QuizId - ", playerData.QuizId, " to global quiz store")
+	}
+
+	//if current quiz already exists in global quiz store, then add
+	//new player in the store.
+	globalQuizStore[playerData.QuizId][id] = models.PlayerDetails{
+		Name: playerData.Name,
+		Marks: 0,
+	}
+
+	//log this quiz id store to check if initialized or not
+	fmt.Println("********************** Initializiing Current Quiz Store ******************")
+	fmt.Println(globalQuizStore[playerData.QuizId])
 
 	//send token as a response or a cookie
 	http.SetCookie(w, &http.Cookie{
@@ -183,15 +196,15 @@ func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoard
 
 	//variable for storing fetched marks
 	marksData := models.MarksData{
-		Role: "leaderboard",
-		PlayerId: decodedPlayer.Id,
+		Role:       "leaderboard",
+		PlayerId:   decodedPlayer.Id,
 		PlayerName: decodedPlayer.Name,
-		Marks: 0,
+		Marks:      0,
 	}
 	err = row.Scan(&marksData.Marks)
-	if err != nil {	//handle error
+	if err != nil { //handle error
 		errObj := models.SocketError{
-			Type: "error",
+			Type:    "error",
 			Message: "failed to scan value is marks varialbe",
 		}
 		utils.ErrorSocket(err, conn, &errObj)
@@ -204,7 +217,7 @@ func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoard
 	marksDataBytes, err := json.Marshal(marksData)
 	if err != nil {
 		errObj := models.SocketError{
-			Type: "error",
+			Type:    "error",
 			Message: "failed to marshal marks data",
 		}
 		utils.ErrorSocket(err, conn, &errObj)
