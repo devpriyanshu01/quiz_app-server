@@ -709,6 +709,5 @@ func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.Decode
 	globalQuizStore[quizId][decodedPlayer.Id] = currPlayerData
 
 	//log the updated quiz details
-	fmt.Println("************************************** LOGGING UPDATED GLOBAL STORE FOR CURRENT QUIZ ID ****************************")
 	fmt.Println(globalQuizStore[quizId])
 }
