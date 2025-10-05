@@ -665,15 +665,23 @@ func sendLeaderboardData(conn *websocket.Conn, quizId int){
 	leaderBoardData, exists := globalQuizStore[quizId]
 	if !exists {
 		log.Println("======= LEADER-BOARD DATA DOESN'T EXISTS ========")
+		fmt.Println("PRINTING TOTAL GLOBAL QUIZ STORE")
+		fmt.Println(globalQuizStore)
 		return
 	}
-	leaderBoardDataByte, err := json.Marshal(leaderBoardData)
+	//leader-board body
+	leaderBoardResponse := models.LeaderBoard{
+		Type: "leaderboard",
+		Data: leaderBoardData,
+	}
+	leaderBoardDataResponseByte, err := json.Marshal(leaderBoardResponse)
 	if err != nil {
 		errObj := utils.CreateSocketErrorObj("failed marshal leaderboard data")	
 		utils.ErrorSocket(err, conn, errObj)
 	}
 	//send leaderboard data to frontend using websocket.
-	conn.WriteMessage(websocket.TextMessage, leaderBoardDataByte)
+
+	conn.WriteMessage(websocket.TextMessage, leaderBoardDataResponseByte)
 }
 
 //fn to update global quiz store
