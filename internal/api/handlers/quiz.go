@@ -689,7 +689,6 @@ func sendLeaderboardData(conn *websocket.Conn, quizId string){
 
 //fn to update global quiz store
 func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.DecodePlayer){
-	fmt.Println("###################################### INSIDE CURRENT PLAYER DATA ############################")
 	quizId := quesData.QuizId
 	
 	currQuizData, exist := globalQuizStore[quizId]
