@@ -552,7 +552,8 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 		//send the leaderboard details to client when asked for it.
 		if string(msg) == "send leaderboard" {
-			sendLeaderboardData(conn, saveans.QuizId)
+			fmt.Println("............Condition matched for sending leaderboard")
+			sendLeaderboardData(conn, quizId)
 		}
 	}
 }
@@ -661,12 +662,16 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	fmt.Println(rowsCount, " row update for player ", decodedPlayerDetails.Name)
 }
 
-func sendLeaderboardData(conn *websocket.Conn, quizId int){
-	leaderBoardData, exists := globalQuizStore[quizId]
+func sendLeaderboardData(conn *websocket.Conn, quizId string){
+	
+	fmt.Println("@@@@@@@@@@@@@@@@@@@@@ inside send leaderboard data @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+	quizid, _  := strconv.Atoi(quizId)
+	leaderBoardData, exists := globalQuizStore[quizid]
 	if !exists {
 		log.Println("======= LEADER-BOARD DATA DOESN'T EXISTS ========")
 		fmt.Println("PRINTING TOTAL GLOBAL QUIZ STORE")
 		fmt.Println(globalQuizStore)
+		fmt.Println("QUIZ ID WAS:", quizId)
 		return
 	}
 	//leader-board body
