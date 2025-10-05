@@ -664,13 +664,11 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 
 func sendLeaderboardData(conn *websocket.Conn, quizId string){
 	
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@ inside send leaderboard data @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	quizid, _  := strconv.Atoi(quizId)
 	leaderBoardData, exists := globalQuizStore[quizid]
 	if !exists {
 		log.Println("======= LEADER-BOARD DATA DOESN'T EXISTS ========")
 		fmt.Println("PRINTING TOTAL GLOBAL QUIZ STORE")
-		fmt.Println(globalQuizStore)
 		fmt.Println("QUIZ ID WAS:", quizId)
 		return
 	}
