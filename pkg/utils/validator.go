@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"quiz_app/internal/models"
@@ -27,6 +28,7 @@ func IsAnyUserFieldEmpty(admin models.Admin) bool {
 }
 
 func ValidateCookie(r *http.Request) (*models.Admin, error) {
+	log.Println("Inside Validate Cookie Fn...")
 	jwtSecret := os.Getenv("JWT_SECRET")
 	cookie, err := r.Cookie("Bearer")
 	if err != nil {
