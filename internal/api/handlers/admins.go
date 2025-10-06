@@ -136,7 +136,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteLaxMode,
-		Domain: "https://quiz-compete.netlify.app",
+		// Domain: "https://quiz-compete.netlify.app",
+		Domain : "https://api.quizapp.priyanshudev.in",
 	})
 
 	w.Header().Set("Content-Type", "application/json")
