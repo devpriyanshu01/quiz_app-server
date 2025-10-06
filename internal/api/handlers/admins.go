@@ -137,7 +137,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteLaxMode,
 		// Domain: "https://quiz-compete.netlify.app",
-		Domain : "https://api.quizapp.priyanshudev.in",
+		Domain : "api.quizapp.priyanshudev.in",
 	})
 
 	w.Header().Set("Content-Type", "application/json")
