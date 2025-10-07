@@ -98,18 +98,18 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(globalQuizStore[playerData.QuizId])
 
 	// send token as a response or a cookie
-	// http.SetCookie(w, &http.Cookie{
-	// 	Name:     "player_token",
-	// 	Value:    token,
-	// 	Path:     "/",
-	// 	HttpOnly: false, // this allows JavaScript to access the cookie.
-	// 	Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
-	// 	Expires:  time.Now().Add(24 * time.Hour),
-	// 	SameSite: http.SameSiteLaxMode, // this allows the cookie to be sent with cross-site requests.
-	// })
+	http.SetCookie(w, &http.Cookie{
+		Name:     "player_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true, // this allows JavaScript to access the cookie.
+		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		Expires:  time.Now().Add(24 * time.Hour),
+		SameSite: http.SameSiteNoneMode, // this allows the cookie to be sent with cross-site requests.
+	})
 	
 	// Manually append Partitioned attribute
-	w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
+	// w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
@@ -122,56 +122,6 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 
 }
-
-// save answers for answered question for players
-/*
-func SaveAnswer(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Save ans route Hit")
-	var saveans models.SaveAns
-	err := json.NewDecoder(r.Body).Decode(&saveans)
-	if err != nil {
-		utils.ErrorLogger(err)
-		http.Error(w, "failed to parse body", http.StatusBadRequest)
-		return
-	}
-
-	//connect db
-	db, err := sqlconnect.ConnectDb()
-	if err != nil {
-		utils.ErrorLogger(err)
-		http.Error(w, "failed to connect with db", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	//validate the cookie & decode details
-	decodedPlayerDetails, err := utils.ValidateCookiePlayers2()
-	if err != nil {
-		utils.ErrorLogger(err)
-		http.Error(w, "failed to validate player cookie", http.StatusUnauthorized)
-		return
-	}
-
-	//query string
-	query := "UPDATE players SET question_id = ?, choosen_ans = ?, marks = ? WHERE id = ?"
-	result, err := db.Exec(query, saveans.QuestionId, saveans.ChoosenAns, saveans.Marks, decodedPlayerDetails.Id)
-	if err != nil {
-		utils.ErrorLogger(err)
-		http.Error(w, "failed to save question", http.StatusInternalServerError)
-		return
-	}
-
-	//rows affected count
-	rowsAff, err := result.RowsAffected()
-	if err != nil {
-		utils.ErrorLogger(err)
-		http.Error(w, "failed to get rows affected", http.StatusInternalServerError)
-		return
-	}
-	fmt.Println("Rows Affected after saving question:", rowsAff)
-
-}
-*/
 
 // get leaderboard
 func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoardBody) {
