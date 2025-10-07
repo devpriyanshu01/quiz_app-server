@@ -132,12 +132,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Name:     "Bearer",
 		Value:    jwtTokenString,
 		Path:     "/",
-		HttpOnly: true, // this allows JavaScript to access the cookie.
-		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		// HttpOnly: true, // this allows JavaScript to access the cookie.
+		HttpOnly: false, // this allows JavaScript to access the cookie.
+		// Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteNoneMode,
-		// Domain: "https://quiz-compete.netlify.app",
 		Domain : "api.quizapp.priyanshudev.in",
+		// Domain : "http://localhost:3001",
 	})
 
 	w.Header().Set("Content-Type", "application/json")

@@ -528,6 +528,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				<-ticker.C
+				fmt.Println("ticker complete")
 				hub.Broadcast <- quesInByte
 			}
 		}

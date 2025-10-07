@@ -97,15 +97,15 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("********************** Initializiing Current Quiz Store ******************")
 	fmt.Println(globalQuizStore[playerData.QuizId])
 
-	//send token as a response or a cookie
+	// send token as a response or a cookie
 	// http.SetCookie(w, &http.Cookie{
 	// 	Name:     "player_token",
 	// 	Value:    token,
 	// 	Path:     "/",
-	// 	HttpOnly: true, // this allows JavaScript to access the cookie.
-	// 	Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+	// 	HttpOnly: false, // this allows JavaScript to access the cookie.
+	// 	Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
 	// 	Expires:  time.Now().Add(24 * time.Hour),
-	// 	SameSite: http.SameSiteNoneMode, // this allows the cookie to be sent with cross-site requests.
+	// 	SameSite: http.SameSiteLaxMode, // this allows the cookie to be sent with cross-site requests.
 	// })
 	
 	// Manually append Partitioned attribute
