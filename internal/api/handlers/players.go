@@ -103,13 +103,13 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: false, // this allows JavaScript to access the cookie.
-		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
+		Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
-		SameSite: http.SameSiteNoneMode, // this allows the cookie to be sent with cross-site requests.
+		SameSite: http.SameSiteLaxMode, // this allows the cookie to be sent with cross-site requests.
 	})
 	
 	// Manually append Partitioned attribute
-	w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
+	// w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
