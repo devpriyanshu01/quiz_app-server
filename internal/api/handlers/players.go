@@ -102,10 +102,10 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 		Name:     "player_token",
 		Value:    token,
 		Path:     "/",
-		HttpOnly: false, // this allows JavaScript to access the cookie.
-		Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
+		HttpOnly: true, // this allows JavaScript to access the cookie.
+		Secure:   true, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode, // this allows the cookie to be sent with cross-site requests.
 	})
 
 	w.Header().Set("Content-Type", "application/json")
