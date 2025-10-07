@@ -109,7 +109,7 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	})
 	
 	// Manually append Partitioned attribute
-	// w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
+	w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
