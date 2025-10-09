@@ -468,7 +468,7 @@ func ValidateQuiz(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-//declare a variable for storing the marks of each player
+// declare a variable for storing the marks of each player
 var playersMarks = make(map[string]models.PlayerDetails)
 var playersInQuiz = make(map[int][]string)
 
@@ -486,7 +486,6 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 	hub := getOrCreateHub(quizId)
 	hub.Register <- conn
-
 
 	questions := []models.FetchQuestions{}
 	for {
@@ -518,7 +517,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 			for _, currQues := range questions {
 				quesData := models.QuesData{
-					Type: "question",
+					Type:           "question",
 					FetchQuestions: currQues,
 				}
 				quesInByte, err := json.Marshal(quesData)
@@ -531,9 +530,10 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("ticker complete")
 				hub.Broadcast <- quesInByte
 			}
+			//notify frontend that all the questions are finished.
+			conn.WriteMessage(websocket.TextMessage, []byte("no more questions"))
 		}
 
-		
 		//handle save answer
 		fmt.Println("Received Msg:", string(msg))
 		var saveans = models.SaveAns{}
@@ -625,7 +625,7 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	decodedPlayerDetails := utils.ValidateCookiePlayers2(saveans.Token, conn)
 	if decodedPlayerDetails == nil {
 		return
-	}	
+	}
 
 	//print decoded player from the cookie
 	fmt.Println("Decoded Player Details:", decodedPlayerDetails)
@@ -651,7 +651,7 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 		utils.ErrorSocket(err, conn, errObj)
 		return
 	}
-	
+
 	//check how many rows udpated
 	rowsCount, err := result.RowsAffected()
 	if err != nil {
@@ -663,9 +663,9 @@ func SaveAnsToDb(saveans *models.SaveAns, conn *websocket.Conn) {
 	fmt.Println(rowsCount, " row update for player ", decodedPlayerDetails.Name)
 }
 
-func sendLeaderboardData(conn *websocket.Conn, quizId string){
-	
-	quizid, _  := strconv.Atoi(quizId)
+func sendLeaderboardData(conn *websocket.Conn, quizId string) {
+
+	quizid, _ := strconv.Atoi(quizId)
 	leaderBoardData, exists := globalQuizStore[quizid]
 	if !exists {
 		log.Println("======= LEADER-BOARD DATA DOESN'T EXISTS ========")
@@ -680,7 +680,7 @@ func sendLeaderboardData(conn *websocket.Conn, quizId string){
 	}
 	leaderBoardDataResponseByte, err := json.Marshal(leaderBoardResponse)
 	if err != nil {
-		errObj := utils.CreateSocketErrorObj("failed marshal leaderboard data")	
+		errObj := utils.CreateSocketErrorObj("failed marshal leaderboard data")
 		utils.ErrorSocket(err, conn, errObj)
 	}
 	//send leaderboard data to frontend using websocket.
@@ -688,10 +688,10 @@ func sendLeaderboardData(conn *websocket.Conn, quizId string){
 	conn.WriteMessage(websocket.TextMessage, leaderBoardDataResponseByte)
 }
 
-//fn to update global quiz store
-func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.DecodePlayer){
+// fn to update global quiz store
+func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.DecodePlayer) {
 	quizId := quesData.QuizId
-	
+
 	currQuizData, exist := globalQuizStore[quizId]
 	if !exist {
 		log.Println("QuizId ", quizId, " doesn't exist in the global Store")
@@ -703,7 +703,7 @@ func updateGlobalQuizStore(quesData models.SaveAns, decodedPlayer *models.Decode
 		log.Println("Player with id ", decodedPlayer.Id, " doesn't exists in quiz data- ", quizId)
 		return
 	}
-	
+
 	currPlayerData.Marks = currPlayerData.Marks + quesData.Marks
 
 	//assign above updated data to global quiz store

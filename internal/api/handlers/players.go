@@ -9,8 +9,6 @@ import (
 	"quiz_app/pkg/utils"
 	"strconv"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 // create global marks store wiz. map of quiz_ids.
@@ -80,7 +78,7 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 
 	//add current player and current quiz to global quiz store
 	//for sending leaderboard data
-	_, exists := globalQuizStore[playerData.QuizId]	
+	_, exists := globalQuizStore[playerData.QuizId]
 	if !exists {
 		globalQuizStore[playerData.QuizId] = make(map[string]models.PlayerDetails)
 		fmt.Println("Added QuizId - ", playerData.QuizId, " to global quiz store")
@@ -89,27 +87,13 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 	//if current quiz already exists in global quiz store, then add
 	//new player in the store.
 	globalQuizStore[playerData.QuizId][id] = models.PlayerDetails{
-		Name: playerData.Name,
+		Name:  playerData.Name,
 		Marks: 0,
 	}
 
 	//log this quiz id store to check if initialized or not
 	fmt.Println("********************** Initializiing Current Quiz Store ******************")
 	fmt.Println(globalQuizStore[playerData.QuizId])
-
-	// send token as a response or a cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "player_token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: false, // this allows JavaScript to access the cookie.
-		Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
-		Expires:  time.Now().Add(24 * time.Hour),
-		SameSite: http.SameSiteLaxMode, // this allows the cookie to be sent with cross-site requests.
-	})
-	
-	// Manually append Partitioned attribute
-	// w.Header().Add("Set-Cookie", `player_token=` + token + `; Path=/; Secure; HttpOnly; SameSite=None; Partitioned`)
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
@@ -123,6 +107,7 @@ func SavePlayers(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
 // get leaderboard
 func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoardBody) {
 	//get player id from cookie
@@ -179,3 +164,4 @@ func GetLeaderboard(conn *websocket.Conn, leaderboardBody *models.GetLeaderBoard
 	conn.WriteMessage(websocket.TextMessage, marksDataBytes)
 
 }
+*/
