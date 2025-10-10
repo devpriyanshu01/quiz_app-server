@@ -487,6 +487,15 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	hub := getOrCreateHub(quizId)
 	hub.Register <- conn
 
+	//logging no. of clients connected for current quiz.
+	log.Println("For QuizId ", hub.QuizId, "currently ", len(hub.Clients))
+
+	//logging all the clients for the current quiz.
+	log.Println("Logging Clients for Quiz Id - ", hub.QuizId)
+	for client, _ := range hub.Clients {
+		fmt.Println("Client : ", client)
+	}
+
 	questions := []models.FetchQuestions{}
 	for {
 		_, msg, err := conn.ReadMessage()
