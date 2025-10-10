@@ -497,7 +497,8 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("Error while reading the client message")
+			log.Println("Error while reading the client message :-")
+			log.Println(err)
 			hub.Unregister <- conn
 			break
 		}
