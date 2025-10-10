@@ -492,9 +492,6 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 
 	//logging all the clients for the current quiz.
 	log.Println("Logging Clients for Quiz Id - ", hub.QuizId)
-	for client, _ := range hub.Clients {
-		fmt.Println("Client : ", client)
-	}
 
 	questions := []models.FetchQuestions{}
 	for {
