@@ -138,7 +138,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		// Secure:   false, // this allows the cookie to be sent over non-HTTPS connections.
 		Expires:  time.Now().Add(24 * time.Hour),
 		SameSite: http.SameSiteNoneMode,
-		Domain : "api.quizapp.priyanshudev.in",
+		// Domain : "api.quizapp.priyanshudev.in",
 		// Domain : "http://localhost:3001",
 	})
 

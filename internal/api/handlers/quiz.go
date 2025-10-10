@@ -488,15 +488,16 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	hub.Register <- conn
 
 	//logging no. of clients connected for current quiz.
+	fmt.Println("####################################################################################")
 	log.Println("For QuizId ", hub.QuizId, "currently ", len(hub.Clients))
+	fmt.Println("####################################################################################")
 
-	//logging all the clients for the current quiz.
-	log.Println("Logging Clients for Quiz Id - ", hub.QuizId)
 
 	questions := []models.FetchQuestions{}
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			log.Println("Error while reading the client message")
 			hub.Unregister <- conn
 			break
 		}
@@ -504,11 +505,8 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 		if string(msg) == "start quiz" {
 			fmt.Println("Condition to start Quiz met....")
 			questions = fetchQuestions(quizId, w)
-			fmt.Println(questions)
-			fmt.Println("len(questions):", len(questions))
 		}
 
-		fmt.Println("len(questions):", len(questions))
 		//print question
 		for _, q := range questions {
 			fmt.Println("----------------------------------------------------------------------------")
