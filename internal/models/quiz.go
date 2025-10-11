@@ -1,6 +1,8 @@
 package models
 
-import "github.com/gorilla/websocket"
+import (
+	"github.com/gorilla/websocket"
+)
 
 type Quiz struct {
 	ID     int    `json:"id"`
@@ -41,29 +43,29 @@ type JoinQuiz struct {
 }
 
 type ConnectedClients struct {
-	Conn *websocket.Conn
-	QuizId string 
-	Name string
+	Conn   *websocket.Conn
+	QuizId string
+	Name   string
 }
 
 type QuizHub struct {
-	QuizId string
-	Clients map[*websocket.Conn]bool
-	Broadcast chan []byte 
-	Register chan *websocket.Conn
+	QuizId     string
+	Clients    map[*websocket.Conn]bool
+	Broadcast  chan []byte
+	Register   chan *websocket.Conn
 	Unregister chan *websocket.Conn
 }
 
-//Hub Logic
-func (h *QuizHub) Run(){
+// Hub Logic
+func (h *QuizHub) Run() {
 	for {
 		select {
-		case conn := <- h.Register :
+		case conn := <-h.Register:
 			h.Clients[conn] = true
-		case conn := <- h.Unregister:
+		case conn := <-h.Unregister:
 			delete(h.Clients, conn)
 			conn.Close()
-		case ques := <- h.Broadcast:
+		case ques := <-h.Broadcast:
 			for conn := range h.Clients {
 				conn.WriteMessage(websocket.TextMessage, ques)
 			}
@@ -71,9 +73,8 @@ func (h *QuizHub) Run(){
 	}
 }
 
-//question data
+// question data
 type QuesData struct {
 	Type string `json:"type"`
 	FetchQuestions
 }
-

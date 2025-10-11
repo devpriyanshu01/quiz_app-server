@@ -492,7 +492,6 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 	log.Println("For QuizId ", hub.QuizId, "currently ", len(hub.Clients))
 	fmt.Println("####################################################################################")
 
-
 	questions := []models.FetchQuestions{}
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -538,7 +537,7 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 				hub.Broadcast <- quesInByte
 			}
 			//notify frontend that all the questions are finished.
-			conn.WriteMessage(websocket.TextMessage, []byte("no more questions"))
+			conn.WriteMessage(websocket.TextMessage, []byte("EOQ"))
 		}
 
 		//handle save answer
