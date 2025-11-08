@@ -28,6 +28,7 @@ func ConnectDb() (*sql.DB, error) {
 	}
 
 	fmt.Println("Connected to MariaDB")
+	fmt.Println("Connection established with MariaDB")
 
 	return db, nil
 }
