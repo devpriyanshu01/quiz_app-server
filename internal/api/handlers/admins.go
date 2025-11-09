@@ -16,7 +16,7 @@ import (
 
 //just for testing handler
 func TestHandler(w http.ResponseWriter, r *http.Request){
-	w.Write([]byte("You're are inside /test route. It means your are testing the application."))
+	w.Write([]byte("Site is Live, Testing Successful!!!"))
 }
 // admin signup handler
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
