@@ -482,8 +482,9 @@ func BroadcastQuestions(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorLogger(err)
 		// http.Error(w, "failed to establish websocket connection", http.StatusInternalServerError)
 		//socket error object
-		socketErrorObj := utils.CreateSocketErrorObj("failed to establish websocket connection")
-		utils.ErrorSocket(err, conn, socketErrorObj)
+		// socketErrorObj := utils.CreateSocketErrorObj("failed to establish websocket connection")
+		// utils.ErrorSocket(err, conn, socketErrorObj)
+		w.Write([]byte("failed to upgrade to websocket connection"))
 		return
 	}
 
