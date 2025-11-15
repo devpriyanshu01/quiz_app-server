@@ -1,6 +1,8 @@
 package models
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -58,6 +60,8 @@ type QuizHub struct {
 
 // Hub Logic
 func (h *QuizHub) Run() {
+	//introducing mutex to avoid concurrent issue
+	var mutex sync.Mutex
 	for {
 		select {
 		case conn := <-h.Register:
@@ -67,7 +71,9 @@ func (h *QuizHub) Run() {
 			conn.Close()
 		case ques := <-h.Broadcast:
 			for conn := range h.Clients {
+				mutex.Lock() //
 				conn.WriteMessage(websocket.TextMessage, ques)
+				mutex.Unlock() //
 			}
 		}
 	}
